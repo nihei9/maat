@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	kithttp "github.com/go-kit/kit/transport/http"
+	"github.com/nihei9/maat/service/validation"
 	"github.com/nihei9/maat/service/value"
 )
 
@@ -22,34 +23,33 @@ func init() {
 
 type PostValidationRequest struct {
 	Expected map[string]value.Value
-	Actual   map[string]value.Value
 }
 
 type PostValidationResponse struct {
-	Passed bool `json:"passed"`
+	ValidationID validation.ID
 }
 
 func postValidation(_ context.Context, req interface{}) (interface{}, error) {
 	r := req.(*PostValidationRequest)
 
-	for key, actual := range r.Actual {
-		expected := r.Expected[key]
-		if passed := expected.Test(actual); !passed {
-			return PostValidationResponse{
-				Passed: false,
-			}, nil
-		}
+	v := validation.NewValidation()
+	for name, expected := range r.Expected {
+		v.Expect(name, expected)
+	}
+
+	id, err := validation.Store.Store(v)
+	if err != nil {
+		return nil, NewErrorResponse(err, http.StatusInternalServerError)
 	}
 
 	return &PostValidationResponse{
-		Passed: true,
+		ValidationID: id,
 	}, nil
 }
 
 func decodePostValidationRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	src := struct {
 		Expected interface{} `json:"expected"`
-		Actual   interface{} `json:"actual"`
 	}{}
 	err := json.NewDecoder(r.Body).Decode(&src)
 	if err != nil {
@@ -73,25 +73,7 @@ func decodePostValidationRequest(_ context.Context, r *http.Request) (interface{
 		}
 	}
 
-	actual := map[string]value.Value{}
-	{
-		srcActual, ok := src.Actual.(map[string]interface{})
-		if !ok {
-			err := fmt.Errorf("'actual' field must be a map[string]interface{}")
-			return nil, NewErrorResponse(err, http.StatusBadRequest)
-		}
-
-		for key, srcElem := range srcActual {
-			e, err := unmarshalValue(srcElem)
-			if err != nil {
-				return nil, NewErrorResponse(err, http.StatusBadRequest)
-			}
-			actual[key] = e
-		}
-	}
-
 	return &PostValidationRequest{
 		Expected: expected,
-		Actual:   actual,
 	}, nil
 }

@@ -1,0 +1,98 @@
+package service
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	kithttp "github.com/go-kit/kit/transport/http"
+	"github.com/nihei9/maat/service/validation"
+	"github.com/nihei9/maat/service/value"
+)
+
+var postValidationTargetsServer *kithttp.Server
+
+func init() {
+	postValidationTargetsServer = kithttp.NewServer(
+		postValidationTargets,
+		decodePostValidationTargetsRequest,
+		kithttp.EncodeJSONResponse,
+	)
+}
+
+type PostValidationTargetsRequest struct {
+	ValidationID validation.ID
+	Actual       map[string]value.Value
+}
+
+type PostValidationTargetsResponse struct {
+	Passed bool `json:"passed"`
+}
+
+func postValidationTargets(_ context.Context, req interface{}) (interface{}, error) {
+	r := req.(*PostValidationTargetsRequest)
+
+	v, err := validation.Store.Load(r.ValidationID)
+	if err != nil {
+		return nil, NewErrorResponse(err, http.StatusInternalServerError)
+	}
+	if v == nil {
+		err := fmt.Errorf("'validation_id' is invalid")
+		return nil, NewErrorResponse(err, http.StatusBadRequest)
+	}
+
+	for name, actual := range r.Actual {
+		passed, err := v.Do(name, actual)
+		if err != nil {
+			return nil, NewErrorResponse(err, http.StatusInternalServerError)
+		}
+		if !passed {
+			return PostValidationTargetsResponse{
+				Passed: false,
+			}, nil
+		}
+	}
+
+	return &PostValidationTargetsResponse{
+		Passed: true,
+	}, nil
+}
+
+func decodePostValidationTargetsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	src := struct {
+		ValidationID string      `json:"validation_id"`
+		Actual       interface{} `json:"actual"`
+	}{}
+	err := json.NewDecoder(r.Body).Decode(&src)
+	if err != nil {
+		return nil, NewErrorResponse(err, http.StatusBadRequest)
+	}
+
+	validationID, err := validation.ParseID(src.ValidationID)
+	if err != nil {
+		return nil, NewErrorResponse(err, http.StatusBadRequest)
+	}
+
+	actual := map[string]value.Value{}
+	{
+		srcActual, ok := src.Actual.(map[string]interface{})
+		if !ok {
+			err := fmt.Errorf("'actual' field must be a map[string]interface{}")
+			return nil, NewErrorResponse(err, http.StatusBadRequest)
+		}
+
+		for key, srcElem := range srcActual {
+			e, err := unmarshalValue(srcElem)
+			if err != nil {
+				return nil, NewErrorResponse(err, http.StatusBadRequest)
+			}
+			actual[key] = e
+		}
+	}
+
+	return &PostValidationTargetsRequest{
+		ValidationID: validationID,
+		Actual:       actual,
+	}, nil
+}
