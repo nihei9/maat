@@ -26,6 +26,18 @@ type PostValidationTargetsRequest struct {
 	Actual       map[string]value.Value
 }
 
+func (r *PostValidationTargetsRequest) Validate() error {
+	if r.ValidationID.IsNil() {
+		return fmt.Errorf("'validation_id' field is required")
+	}
+
+	if len(r.Actual) <= 0 {
+		return fmt.Errorf("'actual' field must contain at least one element")
+	}
+
+	return nil
+}
+
 type PostValidationTargetsResponse struct {
 	Passed bool `json:"passed"`
 }
@@ -38,7 +50,7 @@ func postValidationTargets(_ context.Context, req interface{}) (interface{}, err
 		return nil, NewErrorResponse(err, http.StatusInternalServerError)
 	}
 	if v == nil {
-		err := fmt.Errorf("'validation_id' is invalid")
+		err := fmt.Errorf("'validation_id' field is invalid")
 		return nil, NewErrorResponse(err, http.StatusBadRequest)
 	}
 
@@ -91,8 +103,14 @@ func decodePostValidationTargetsRequest(_ context.Context, r *http.Request) (int
 		}
 	}
 
-	return &PostValidationTargetsRequest{
+	res := &PostValidationTargetsRequest{
 		ValidationID: validationID,
 		Actual:       actual,
-	}, nil
+	}
+	err = res.Validate()
+	if err != nil {
+		return nil, NewErrorResponse(err, http.StatusBadRequest)
+	}
+
+	return res, nil
 }

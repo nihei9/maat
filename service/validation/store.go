@@ -23,6 +23,10 @@ func ParseID(src string) (ID, error) {
 	return ID(src), nil
 }
 
+func (id ID) IsNil() bool {
+	return id == NilID
+}
+
 var Store ValidationStore
 
 func init() {

@@ -25,6 +25,14 @@ type PostValidationRequest struct {
 	Expected map[string]value.Value
 }
 
+func (r *PostValidationRequest) Validate() error {
+	if len(r.Expected) <= 0 {
+		return fmt.Errorf("'expected' field must contain at least one element")
+	}
+
+	return nil
+}
+
 type PostValidationResponse struct {
 	ValidationID validation.ID
 }
@@ -73,7 +81,13 @@ func decodePostValidationRequest(_ context.Context, r *http.Request) (interface{
 		}
 	}
 
-	return &PostValidationRequest{
+	res := &PostValidationRequest{
 		Expected: expected,
-	}, nil
+	}
+	err = res.Validate()
+	if err != nil {
+		return nil, NewErrorResponse(err, http.StatusBadRequest)
+	}
+
+	return res, nil
 }
