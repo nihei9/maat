@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -13,6 +14,22 @@ type ID string
 
 func newID() ID {
 	return ID(uuid.New().String())
+}
+
+func (id *ID) UnmarshalJSON(src []byte) error {
+	var str string
+	err := json.Unmarshal(src, &str)
+	if err != nil {
+		return err
+	}
+	v, err := ParseID(str)
+	if err != nil {
+		return err
+	}
+
+	*id = v
+
+	return nil
 }
 
 func ParseID(src string) (ID, error) {

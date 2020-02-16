@@ -76,15 +76,10 @@ func postValidationTargets(_ context.Context, req interface{}) (interface{}, err
 
 func decodePostValidationTargetsRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	src := struct {
-		ValidationID string      `json:"validation_id"`
-		Actual       interface{} `json:"actual"`
+		ValidationID validation.ID `json:"validation_id"`
+		Actual       interface{}   `json:"actual"`
 	}{}
 	err := json.NewDecoder(r.Body).Decode(&src)
-	if err != nil {
-		return nil, NewErrorResponse(err, http.StatusBadRequest)
-	}
-
-	validationID, err := validation.ParseID(src.ValidationID)
 	if err != nil {
 		return nil, NewErrorResponse(err, http.StatusBadRequest)
 	}
@@ -107,7 +102,7 @@ func decodePostValidationTargetsRequest(_ context.Context, r *http.Request) (int
 	}
 
 	res := &PostValidationTargetsRequest{
-		ValidationID: validationID,
+		ValidationID: src.ValidationID,
 		Actual:       actual,
 	}
 	err = res.Validate()
