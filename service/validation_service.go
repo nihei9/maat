@@ -36,6 +36,7 @@ func (r *PostValidationRequest) Validate() error {
 }
 
 type PostValidationResponse struct {
+	httpResponse
 	ValidationID validation.ID `json:"validation_id"`
 }
 
@@ -102,5 +103,6 @@ func EncodePostValidationRequest(ctx context.Context, r *http.Request, request i
 func DecodePostValidationResponse(_ context.Context, r *http.Response) (interface{}, error) {
 	res := &PostValidationResponse{}
 	err := json.NewDecoder(r.Body).Decode(res)
+	res.setHTTPResponse(r)
 	return res, err
 }

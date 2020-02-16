@@ -41,6 +41,7 @@ func (r *PostValidationTargetsRequest) Validate() error {
 }
 
 type PostValidationTargetsResponse struct {
+	httpResponse
 	Passed bool `json:"passed"`
 }
 
@@ -125,5 +126,6 @@ func EncodePostValidationTargetsRequest(ctx context.Context, r *http.Request, re
 func DecodePostValidationTargetsResponse(_ context.Context, r *http.Response) (interface{}, error) {
 	res := &PostValidationTargetsResponse{}
 	err := json.NewDecoder(r.Body).Decode(res)
+	res.setHTTPResponse(r)
 	return res, err
 }

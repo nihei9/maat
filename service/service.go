@@ -14,3 +14,27 @@ func MakeHTTPHandler() http.Handler {
 
 	return r
 }
+
+type httpResponse struct {
+	status     string
+	statusCode int
+	header     http.Header
+}
+
+func (r *httpResponse) setHTTPResponse(res *http.Response) {
+	r.status = res.Status
+	r.statusCode = res.StatusCode
+	r.header = res.Header
+}
+
+func (r *httpResponse) HTTPStatus() string {
+	return r.status
+}
+
+func (r *httpResponse) HTTPStatusCode() int {
+	return r.statusCode
+}
+
+func (r *httpResponse) HTTPHeader() http.Header {
+	return r.header
+}

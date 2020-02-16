@@ -21,6 +21,7 @@ func init() {
 }
 
 type GetHealthResponse struct {
+	httpResponse
 	Application string `json:"application"`
 	Status      string `json:"status"`
 }
@@ -40,5 +41,6 @@ func EncodeGetHealthRequest(_ context.Context, req *http.Request, _ interface{})
 func DecodeGetHealthResponse(_ context.Context, res *http.Response) (interface{}, error) {
 	response := &GetHealthResponse{}
 	err := json.NewDecoder(res.Body).Decode(response)
+	response.setHTTPResponse(res)
 	return response, err
 }
