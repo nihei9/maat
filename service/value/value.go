@@ -1,6 +1,12 @@
 package value
 
+import "encoding/json"
+
 type ValueType string
+
+func (t ValueType) String() string {
+	return string(t)
+}
 
 const (
 	ValueTypeText = ValueType("text")
@@ -8,6 +14,7 @@ const (
 )
 
 type Value interface {
+	json.Marshaler
 	Test(target Value) bool
 	vType() ValueType
 }
@@ -20,6 +27,17 @@ func NewTextValue(text string) Value {
 	return &TextValue{
 		value: text,
 	}
+}
+
+func (v *TextValue) MarshalJSON() ([]byte, error) {
+	data := struct {
+		Type  string `json:"type"`
+		Value string `json:"value"`
+	}{
+		Type:  v.vType().String(),
+		Value: v.value,
+	}
+	return json.Marshal(&data)
 }
 
 func (v *TextValue) vType() ValueType {
@@ -47,6 +65,17 @@ func NewListValue() Value {
 	return &ListValue{
 		value: []Value{},
 	}
+}
+
+func (v *ListValue) MarshalJSON() ([]byte, error) {
+	data := struct {
+		Type  string  `json:"type"`
+		Value []Value `json:"value"`
+	}{
+		Type:  v.vType().String(),
+		Value: v.value,
+	}
+	return json.Marshal(&data)
 }
 
 func (v *ListValue) Append(e Value) {

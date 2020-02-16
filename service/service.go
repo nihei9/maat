@@ -8,9 +8,9 @@ import (
 
 func MakeHTTPHandler() http.Handler {
 	r := mux.NewRouter()
-	r.Methods("GET").Path("/health").Handler(getHealthServer)
-	r.Methods("POST").Path("/validation").Handler(postValidationServer)
-	r.Methods("POST").Path("/validation/targets").Handler(postValidationTargetsServer)
+	r.Methods("GET").Path(healthServicePath).Handler(getHealthServer)
+	r.Methods("POST").Path(validationServicePath).Handler(postValidationServer)
+	r.Methods("POST").Path(validationTargetsServicePath).Handler(postValidationTargetsServer)
 
 	return r
 }

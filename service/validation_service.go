@@ -11,6 +11,8 @@ import (
 	"github.com/nihei9/maat/service/value"
 )
 
+const validationServicePath = "/validation"
+
 var postValidationServer *kithttp.Server
 
 func init() {
@@ -22,7 +24,7 @@ func init() {
 }
 
 type PostValidationRequest struct {
-	Expected map[string]value.Value
+	Expected map[string]value.Value `json:"expected"`
 }
 
 func (r *PostValidationRequest) Validate() error {
@@ -34,7 +36,7 @@ func (r *PostValidationRequest) Validate() error {
 }
 
 type PostValidationResponse struct {
-	ValidationID validation.ID
+	ValidationID validation.ID `json:"validation_id"`
 }
 
 func postValidation(_ context.Context, req interface{}) (interface{}, error) {
@@ -90,4 +92,15 @@ func decodePostValidationRequest(_ context.Context, r *http.Request) (interface{
 	}
 
 	return res, nil
+}
+
+func EncodePostValidationRequest(ctx context.Context, r *http.Request, request interface{}) error {
+	r.URL.Path = validationServicePath
+	return kithttp.EncodeJSONRequest(ctx, r, request)
+}
+
+func DecodePostValidationResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	res := &PostValidationResponse{}
+	err := json.NewDecoder(r.Body).Decode(res)
+	return res, err
 }
